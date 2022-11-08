@@ -1,35 +1,28 @@
-import discord
-from discord.ext import commands
-from PIL import Image
-import ids
-import praw
-from praw.models import InlineImage
 import os
+import discord
+from PIL import Image
+import praw
 import time
 
 
 reddit = praw.Reddit(
     user_agent="meme:0.1",
-    client_id=ids.CLIENT,
-    client_secret=ids.SECRET,
-    username=ids.ID,
-    password=ids.PASS,
+    client_id=os.environ['CLIENT'],
+    client_secret=os.environ['SECRET'],
+    username=os.environ['ID'],
+    password=os.environ['PASS'],
 )
 
 
 def imgsubmit(image: str, title: str):
     media = f"memesaves/{image}"
 
-    subreddit = reddit.subreddit(ids.SUB)
+    subreddit = reddit.subreddit(os.environ['SUB'])
 
     print("submitting post on reddit...")
 
-    try:
-        post = subreddit.submit_image(title, image_path=media)
-        print("post submitted...")
-
-    except error as e:
-        print(e)
+    post = subreddit.submit_image(title, image_path=media)
+    print("post submitted...")
 
 
     if os.path.exists(f"memesaves/{image}"):
@@ -42,7 +35,7 @@ def imgsubmit(image: str, title: str):
 def vidsubmit(video: str, title: str):
     media = f"memesaves/{video}"
 
-    subreddit = reddit.subreddit(ids.SUB)
+    subreddit = reddit.subreddit(os.environ['SUB'])
 
     print("submitting post on reddit...")
 
@@ -71,7 +64,7 @@ async def on_ready():
 @client.event
 async def on_message(message: discord.Message) -> None:
 
-    if message.channel.id == 1037587618390614046:
+    if message.channel.id == int(os.environ['CHANNEL']):
         if message.content.startswith('^'):
             if "ping" in message.content.lower():
                 await message.channel.send(f"{message.author.mention} Zinda hu bhay...")
@@ -121,5 +114,4 @@ async def on_message(message: discord.Message) -> None:
             except:
                 await message.add_reaction('❎')
 
-client.run(ids.TOKEN)
-
+client.run(os.environ['TOKEN'])
