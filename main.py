@@ -122,3 +122,4 @@ async def on_message(message: discord.Message) -> None:
                 await message.add_reaction('❎')
 
 client.run(ids.TOKEN)
+
