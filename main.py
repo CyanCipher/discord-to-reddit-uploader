@@ -3,6 +3,7 @@ import discord
 from PIL import Image
 import praw
 import time
+import cv2
 
 
 reddit = praw.Reddit(
@@ -13,62 +14,36 @@ reddit = praw.Reddit(
     password=os.environ['PASS'],
 )
 
-
-def imgsubmit(image: str, title: str):
-    media = f"memesaves/{image}"
-
-    subreddit = reddit.subreddit(os.environ['SUB'])
-
-    print("submitting post on reddit...")
-
-    post = subreddit.submit_image(title, image_path=media)
-    print("post submitted...")
+def delete_file(file: str):
+    if os.path.exists(f'memesaves/{file}'):
+        os.remove(f'memesaves/{file}')
+        print("Delete Success...")
 
 
-    if os.path.exists(f"memesaves/{image}"):
-        os.remove(f"memesaves/{image}")  # one file at a time
-        print("deleted file sucessfully...")
+def gen_nail(file: str):
+    vidcap = cv2.VideoCapture(f'memesaves/{file}')
+    success, image = vidcap.read()
 
-    return str(post.shortlink)
+    if success:
+        cv2.imwrite('thumbnail.jpg', image)
 
-
-def vidsubmit(video: str, title: str):
-    media = f"memesaves/{video}"
-
-    subreddit = reddit.subreddit(os.environ['SUB'])
-
-    print("submitting post on reddit...")
-
-    subreddit.submit_video(title, video_path=media)
-    print("post submitted...")
-
-
-    if os.path.exists(f"memesaves/{video}"):
-        os.remove(f"memesaves/{video}")  # one file at a time
-        print("deleted file sucessfully...")
-
-
-# You can add more attachments/formats here to be saved.
 image_types = ["png", "jpeg", "gif", "jpg"]
 video_types = ["mp4", "mov"]
-intents = discord.Intents.default()
-intents.message_content = True
-client = discord.Client(intents=intents)
 
+intents = discord.Intents.default()
+client = discord.Client(intents = intents)
 
 @client.event
 async def on_ready():
-    print('We have logged in as {0.user}'.format(client))
+    print("We have logged in as {0.user}".format(client))
 
 
 @client.event
 async def on_message(message: discord.Message) -> None:
 
-    if message.channel.id == int(os.environ['CHANNEL']):
-        if message.content.startswith('^'):
-            if "ping" in message.content.lower():
-                await message.channel.send(f"{message.author.mention} Zinda hu bhay...")
-                print("working...")
+    if message.channel.id == 1037587618390614046:
+        if "^ping" in message.content.lower():
+            await message.channel.send(f"{message.author.mention} Zinda hu bhay...")
         
         if message.attachments:
             try:
@@ -77,40 +52,37 @@ async def on_message(message: discord.Message) -> None:
                         try:
                             # 'attachments/{{attachment.filename}' is the PATH to where the attachmets/images will be saved. Example: home/you/Desktop/attachments/{{attachment.filename}
                             await attachment.save(f'memesaves/{attachment.filename}')
-                            postlink = imgsubmit(image=str(attachment.filename),
-                                    title=str(message.content))
+                            reddit.subreddit(os.environ['SUB']).submit_image(title=message.content, image_path=f'memesaves/{attachment.filename}')
+                            delete_file(attachment.filename)
                         except FileNotFoundError:
                             image = Image.new('RGB', (100, 100))
                             image.save(f'memesaves/{attachment.filename}', "PNG")
-                            # 'attachments/{{attachment.filename}' is the PATH to where the attachmets/images will be saved. Example: home/you/Desktop/attachments/{{attachment.filename}
                             await attachment.save(f'memesaves/{attachment.filename}')
-                            postlink = imgsubmit(image=str(attachment.filename),
-                                    title=str(message.content))
-                            print("Saved new file")
+                            reddit.subreddit(os.environ['SUB']).submit_image(title=message.content, image_path=f'memesaves/{attachment.filename}')
+                            delete_file(attachment.filename)
                             await message.add_reaction('✅')
                         else:
-                            print("sucessful")
                             await message.add_reaction('✅')
 
                     elif any(attachment.filename.lower().endswith(video) for video in video_types):
                         try:
                             await attachment.save(f'memesaves/{attachment.filename}')
-                            vidsubmit(video=str(attachment.filename),
-                                    title=str(message.content))
+                            gen_nail(attachment.filename)
+                            reddit.subreddit(os.environ['SUB']).submit_video(title=message.content, video_path=f'memesaves/{attachment.filename}', thumbnail_path='./thumbnail.jpg')
+                            delete_file(attachment.filename)
                         except FileNotFoundError:
                             image = Image.new('RGB', (100, 100))
                             image.save(f'memesaves/{attachment.filename}', "PNG")
                             # 'attachments/{{attachment.filename}' is the PATH to where the attachmets/images will be saved. Example: home/you/Desktop/attachments/{{attachment.filename}
                             await attachment.save(f'memesaves/{attachment.filename}')
-                            vidsubmit(video=str(attachment.filename),
-                                    title=str(message.content))
-                            print("Saved new file")
+                            reddit.subreddit(os.environ['SUB']).submit_video(title=message.conent, video_path=f'memesaves/{attachment.filename}', thumbnail_path='./thumbnail.jpg')
+                            delete_file(attachment.filename)
                             await message.add_reaction('✅')
                         else:
-                            print("sucessful")
                             await message.add_reaction('✅')
                     time.sleep(10)
-            
+
+
             except:
                 await message.add_reaction('❎')
 
